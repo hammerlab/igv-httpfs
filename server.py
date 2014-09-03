@@ -66,7 +66,6 @@ def make_response_headers(response_body):
 BYTE_RANGE_RE = re.compile(r'bytes=(\d+)-(\d+)')
 def parse_byte_range(byte_range):
     '''Returns the two numbers in 'bytes=123-456' or throws ValueError.'''
-    global BYTE_RANGE_RE
     m = BYTE_RANGE_RE.match(byte_range)
     if not m:
         raise ValueError('Invalid byte range %s' % byte_range)
