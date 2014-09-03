@@ -90,9 +90,12 @@ def test_stubbed_get():
     eq_(200, stubbed_get(url).status_code)
     eq_('This is b.txt', stubbed_get(url).content)
 
-    # TODO: non-existent file
-    # TODO: invalid host
-    # TODO: byte range
+    eq_(404, stubbed_get(url.replace('b.txt', 'c.txt')).status_code)
+    eq_(404, stubbed_get(url.replace('b.txt', 'c.txt')).status_code)
+
+    partial_url = url + '&offset=5&length=4'
+    eq_(200, stubbed_get(partial_url).status_code)
+    eq_('is b', stubbed_get(partial_url).content)
 
 
 @mock.patch('requests.get', stubbed_get)
