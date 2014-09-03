@@ -12,6 +12,7 @@ Usage:
 
 import httplib
 import json
+import re
 import sys
 import urllib
 import wsgiref.simple_server
@@ -57,7 +58,26 @@ def status_code_response(status_code):
     return str(status_code) + ' ' + httplib.responses[status_code]
 
 
-def handle_remote_failure(response, start_response):
+def make_response_headers(response_body):
+    return [('Content-Type', 'text/plain'),
+            ('Content-Length', str(len(response_body)))]
+
+
+BYTE_RANGE_RE = re.compile(r'bytes=(\d+)-(\d+)')
+def parse_byte_range(byte_range):
+    '''Returns the two numbers in 'bytes=123-456' or throws ValueError.'''
+    global BYTE_RANGE_RE
+    m = BYTE_RANGE_RE.match(byte_range)
+    if not m:
+        raise ValueError('Invalid byte range %s' % byte_range)
+
+    first, last = [int(x) for x in m.groups()]
+    if last < first:
+        raise ValueError('Invalid byte range %s' % byte_range)
+    return first, last
+
+
+def handle_remote_failure(response):
     status = status_code_response(response.status_code)
     response_body = response.text
 
@@ -65,37 +85,78 @@ def handle_remote_failure(response, start_response):
     try:
         exception = response.json()['RemoteException']
         response_body = exception['message']
-    except ValueError, KeyError:
+    except (ValueError, KeyError):
         pass
 
-    response_headers = [('Content-Type', 'text/plain'),
-                        ('Content-Length', str(len(response_body)))]
-    start_response(status, response_headers)
-    return [response_body]
+    return status, make_response_headers(response_body), response_body
+
+
+def handle_normal_request(path, params={}):
+    url = make_httpfs_url(path, params)
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return handle_remote_failure(response)
+
+    status = status_code_response(200)
+    response_body = response.content
+    return status, make_response_headers(response_body), response_body
+
+
+def handle_range_request(environ):
+    path = environ['PATH_INFO']
+    byte_range_header = environ.get('HTTP_RANGE')
+    first, last = parse_byte_range(byte_range_header)
+    httpfs_params = {
+        'offset': first,
+        'length': last - first + 1
+    }
+    status, response_headers, response_body = handle_normal_request(
+            path, httpfs_params)
+    if status != '200 OK':
+        return status, response_headers, response_body
+
+    # Getting the full length of the file requires a second request.
+    # TODO: cache this response.
+    stat_url = make_httpfs_url(path, {'op': 'getcontentsummary'})
+    try:
+        total_length = requests.get(stat_url).json()['ContentSummary']['length']
+    except (KeyError, ValueError):
+        response_body = 'Unable to get total length of %s' % path
+        return (status_code_response(500),
+                make_response_headers(response_body), response_body)
+
+    status = status_code_response(206)
+    response_headers.extend([
+        ('Accept-Ranges', 'bytes'),
+        ('Content-Range', 'bytes %s-%s/%s' % (first, last, total_length))
+    ])
+    return status, response_headers, response_body
 
 
 def application(environ, start_response):
     '''Required WSGI interface.'''
     request_method = environ['REQUEST_METHOD']
-    path = environ['PATH_INFO']
-    query = environ['QUERY_STRING']
-    byte_range = environ.get('HTTP_RANGE')
 
-    url = make_httpfs_url(path)
-    response = requests.get(url)
+    if request_method not in ['GET', 'HEAD']:
+        response_body = 'Method %s not allowed.' % request_method
+        start_response(status_code_response(405),
+                       make_response_headers(response_body))
+        return [response_body]
 
-    if response.status_code != 200:
-        return handle_remote_failure(response, start_response)
+    byte_range_header = environ.get('HTTP_RANGE')
+    if byte_range_header:
+        status, response_headers, response_body = handle_range_request(environ)
+    else:
+        path = environ['PATH_INFO']
+        status, response_headers, response_body = handle_normal_request(path)
 
-    status = status_code_response(200)
-    response_body = response.content
-    response_headers = [('Content-Type', 'text/plain'),
-                        ('Content-Length', str(len(response_body)))]
     start_response(status, response_headers)
 
-    # Return the response body.
-    # Notice it is wrapped in a list although it could be any iterable.
-    return [response_body]
+    if request_method == 'GET':
+        return [response_body]
+    elif request_method == 'HEAD':
+        return ['']
 
 
 def run():
