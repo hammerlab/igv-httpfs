@@ -16,19 +16,41 @@ def test_make_httpfs_url():
     # - setting FLAGS.hdfs_user
     # - setting FLAGS.hdfs_prefix
 
+FAKE_FS = {
+        'a/b/c.txt': 'This is a/b/c.txt',
+        'b.txt': 'This is b.txt'
+}
 
 def stubbed_get(path):
-    response = 'Every good boy deserves fudge.'
-    return response
+    prefix = 'http://localhost:14000/webhdfs/v1/'
+    if not path.startswith(prefix):
+        raise requests.ConnectionError()
+
+    path = path[len(prefix):]
+    r = requests.Response()
+    if path in FAKE_FS:
+        r._content = FAKE_FS[path]
+        r.status_code = 200
+    else:
+        r.status_code = 404
+    return r
 
 
 def test_stubbed_get():
-    eq_('Every good boy deserves fudge.', stubbed_get('http://www.google.com/'))
+    url = 'http://localhost:14000/webhdfs/v1/b.txt'
+    eq_(200, stubbed_get(url).status_code)
+    eq_('This is b.txt', stubbed_get(url).content)
+
+    # TODO: non-existent file
+    # TODO: invalid host
+    # TODO: byte range
 
 
 @mock.patch('requests.get', stubbed_get)
 def test_stubbing():
-    eq_('Every good boy deserves fudge.', requests.get('http://google.com/'))
+    url = 'http://localhost:14000/webhdfs/v1/b.txt'
+    eq_(200, requests.get(url).status_code)
+    eq_('This is b.txt', requests.get(url).content)
 
 
 @mock.patch('requests.get', stubbed_get)
