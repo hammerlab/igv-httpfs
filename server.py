@@ -41,7 +41,7 @@ gflags.DEFINE_string(
 def make_httpfs_url(path, user_params={}):
     params = {'user.name': FLAGS.hdfs_user, 'op': 'OPEN'}
     params.update(user_params)
-    return 'http://localhost:%s/webhdfs/v1%s%s?%s' % (
+    return 'http://demeter.hpc.mssm.edu:%s/webhdfs/v1%s%s?%s' % (
             FLAGS.httpfs_port, FLAGS.hdfs_prefix, path,
             urllib.urlencode(params))
 
@@ -171,8 +171,8 @@ def run():
         port = int(argv[1])
 
     #check_connection()
-    httpd = wsgiref.simple_server.make_server('localhost', port, application)
-    sys.stderr.write('Listening on localhost:%d\n' % port)
+    httpd = wsgiref.simple_server.make_server('0.0.0.0', port, application)
+    sys.stderr.write('Listening on 0.0.0.0:%d\n' % port)
     httpd.serve_forever()
 
 
