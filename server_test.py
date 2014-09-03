@@ -1,9 +1,11 @@
 import server
 
-import requests
+import json
 import mock
-from nose.tools import *
+import requests
+import urlparse
 
+from nose.tools import *
 
 def test_make_httpfs_url():
     eq_('http://localhost:14000/webhdfs/v1/datasets/foo.bam?user.name=igv&op=OPEN',
@@ -21,18 +23,27 @@ FAKE_FS = {
         'b.txt': 'This is b.txt'
 }
 
-def stubbed_get(path):
+def stubbed_get(url):
     prefix = 'http://localhost:14000/webhdfs/v1/'
-    if not path.startswith(prefix):
+    if not url.startswith(prefix):
         raise requests.ConnectionError()
 
-    path = path[len(prefix):]
+    parsed_url = urlparse.urlparse(url)
+    assert parsed_url.path.startswith('/webhdfs/v1/')
+    path = parsed_url.path[len('/webhdfs/v1/'):]
+
     r = requests.Response()
     if path in FAKE_FS:
         r._content = FAKE_FS[path]
         r.status_code = 200
     else:
         r.status_code = 404
+        r._content = json.dumps({
+            'RemoteException': {
+                'message': 'File /%s does not exist.' % path,
+                'exception': 'FileNotFoundException'
+            }
+        })
     return r
 
 
@@ -58,11 +69,28 @@ def test_wsgi_application():
     start_response = mock.MagicMock()
     response = server.application({
         'REQUEST_METHOD': 'GET',
-        'PATH_INFO': '/',
+        'PATH_INFO': '/b.txt',
         'QUERY_STRING': '',
         }, start_response)
     
-    eq_(['Hello'], response)
+    expected_response = 'This is b.txt'
+    eq_([expected_response], response)
     start_response.assert_called_once_with('200 OK', [
         ('Content-Type', 'text/plain'),
-        ('Content-Length', str(len('Hello')))])
+        ('Content-Length', str(len(expected_response)))])
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_wsgi_missing_file():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'GET',
+        'PATH_INFO': '/c.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+    
+    expected_response = 'File /c.txt does not exist.'
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('404 Not Found', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])

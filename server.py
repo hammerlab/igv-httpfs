@@ -10,6 +10,7 @@ Usage:
     server.py [--httpfs_port 14000] [--hdfs_user igv] [--hdfs_prefix /path/to/root] [port]
 '''
 
+import httplib
 import json
 import sys
 import urllib
@@ -51,16 +52,43 @@ def check_connection():
         'Unable to connect to HttpFS, request for %s returned %r' % (url, response))
 
 
+def status_code_response(status_code):
+    '''Turns a numeric code into a string, e.g. 404 --> '404 Not Found'.'''
+    return str(status_code) + ' ' + httplib.responses[status_code]
+
+
+def handle_remote_failure(response, start_response):
+    status = status_code_response(response.status_code)
+    response_body = response.text
+
+    # Attempt to improve the error message
+    try:
+        exception = response.json()['RemoteException']
+        response_body = exception['message']
+    except ValueError, KeyError:
+        pass
+
+    response_headers = [('Content-Type', 'text/plain'),
+                        ('Content-Length', str(len(response_body)))]
+    start_response(status, response_headers)
+    return [response_body]
+
+
 def application(environ, start_response):
     '''Required WSGI interface.'''
-    response_body = 'Hello'
-
     request_method = environ['REQUEST_METHOD']
     path = environ['PATH_INFO']
     query = environ['QUERY_STRING']
     byte_range = environ.get('HTTP_RANGE')
 
-    status = '200 OK'
+    url = make_httpfs_url(path)
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        return handle_remote_failure(response, start_response)
+
+    status = status_code_response(200)
+    response_body = response.content
     response_headers = [('Content-Type', 'text/plain'),
                         ('Content-Length', str(len(response_body)))]
     start_response(status, response_headers)
