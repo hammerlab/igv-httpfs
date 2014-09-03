@@ -10,11 +10,15 @@ Usage:
     server.py [--httpfs_port 14000] [--hdfs_user igv] [--hdfs_prefix /path/to/root] [port]
 '''
 
+import json
+import sys
 import urllib
+import wsgiref.simple_server
 
-import requests
+
 import gflags
 FLAGS = gflags.FLAGS
+import requests
 
 
 gflags.DEFINE_integer(
@@ -47,8 +51,41 @@ def check_connection():
         'Unable to connect to HttpFS, request for %s returned %r' % (url, response))
 
 
+def application(environ, start_response):
+    '''Required WSGI interface.'''
+    response_body = 'Hello'
+
+    request_method = environ['REQUEST_METHOD']
+    path = environ['PATH_INFO']
+    query = environ['QUERY_STRING']
+    byte_range = environ.get('HTTP_RANGE')
+
+    status = '200 OK'
+    response_headers = [('Content-Type', 'text/plain'),
+                        ('Content-Length', str(len(response_body)))]
+    start_response(status, response_headers)
+
+    # Return the response body.
+    # Notice it is wrapped in a list although it could be any iterable.
+    return [response_body]
+
+
 def run():
-    check_connection()
+    try:
+        argv = FLAGS(sys.argv)
+    except gflags.FlagsError, e:
+        sys.stderr.write('%s\n' % e)
+        sys.exit(1)
+
+    if len(argv) < 2:
+        port = 9876
+    else:
+        port = int(argv[1])
+
+    #check_connection()
+    httpd = wsgiref.simple_server.make_server('localhost', port, application)
+    sys.stderr.write('Listening on localhost:%d\n' % port)
+    httpd.serve_forever()
 
 
 if __name__ == '__main__':
