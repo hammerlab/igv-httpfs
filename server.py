@@ -83,7 +83,7 @@ def handle_remote_failure(response):
     # Attempt to improve the error message
     try:
         exception = response.json()['RemoteException']
-        response_body = exception['message']
+        response_body = str(exception['message'])
     except (ValueError, KeyError):
         pass
 

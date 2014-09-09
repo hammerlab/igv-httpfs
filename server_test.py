@@ -3,6 +3,7 @@ import server
 import json
 import mock
 import requests
+from types import StringType
 import urlparse
 
 from nose.tools import *
@@ -132,6 +133,7 @@ def test_wsgi_missing_file():
     
     expected_response = 'File /c.txt does not exist.'
     eq_([expected_response], response)
+    assert type(response[0]) is StringType  # wsgi requires this.
     start_response.assert_called_once_with('404 Not Found', [
         ('Content-Type', 'text/plain'),
         ('Content-Length', str(len(expected_response)))])
