@@ -7,42 +7,38 @@ It exports a more typical HTTP interface over HttpFS. Differences include:
     - Supports the "Range: bytes" header, which is extensively used by IGV
 
 Usage:
-    server.py [--httpfs_port 14000] [--hdfs_user igv] [--hdfs_prefix /path/to/root] [port]
+    server.py [port]
+    
+Respects the following environment variables:
+    HTTPFS_ENDPOINT ='http://localhost:14000'
+    HDFS_USER       ='igv'
+    HDFS_PREFIX     =''
 '''
 
 import httplib
 import json
+import os
 import re
+import requests
 import sys
 import urllib
 import wsgiref.simple_server
 
 
-import gflags
-FLAGS = gflags.FLAGS
-import requests
-
-
-gflags.DEFINE_string(
-        'httpfs_endpoint', 'http://localhost:14000',
-        'Root URL for the HttpFS server.')
-
-gflags.DEFINE_string(
-        'hdfs_user', 'igv',
-        'User to pass to HttpFS for pseudo-authentication.')
-
-gflags.DEFINE_string(
-        'hdfs_prefix', '',
-        'Set to restrict requests to a particular HDFS directory. If you set '
-        'this to "/a/b/c", then a request for "d/e.txt" will look for '
-        'a/b/c/d/e.txt on HDFS.')
+# These are defaults which can be overridden by environment variables.
+CONFIG = {
+    'HTTPFS_ENDPOINT': 'http://localhost:14000',
+    'HDFS_USER': 'igv',
+    'HDFS_PREFIX': ''
+}
+CONFIG.update(os.environ)
 
 
 def make_httpfs_url(path, user_params={}):
-    params = {'user.name': FLAGS.hdfs_user, 'op': 'OPEN'}
+    params = {'user.name': CONFIG['HDFS_USER'], 'op': 'OPEN'}
     params.update(user_params)
     return '%s/webhdfs/v1%s%s?%s' % (
-            FLAGS.httpfs_endpoint, FLAGS.hdfs_prefix, path,
+            CONFIG['HTTPFS_ENDPOINT'], CONFIG['HDFS_PREFIX'], path,
             urllib.urlencode(params))
 
 
@@ -171,16 +167,10 @@ def application(environ, start_response):
 
 
 def run():
-    try:
-        argv = FLAGS(sys.argv)
-    except gflags.FlagsError, e:
-        sys.stderr.write('%s\n' % e)
-        sys.exit(1)
-
-    if len(argv) < 2:
+    if len(sys.argv) < 2:
         port = 9876
     else:
-        port = int(argv[1])
+        port = int(sys.argv[1])
 
     #check_connection()
     httpd = wsgiref.simple_server.make_server('0.0.0.0', port, application)

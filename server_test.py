@@ -14,11 +14,9 @@ def test_make_httpfs_url():
             server.make_httpfs_url('/datasets/foo.bam'))
 
     # Tests to write:
-    # - another op
-    # - a byte range
-    # - setting FLAGS.httpfs_port
-    # - setting FLAGS.hdfs_user
-    # - setting FLAGS.hdfs_prefix
+    # - setting environment variable httpfs_port
+    # - setting environment variable hdfs_user
+    # - setting environment variable hdfs_prefix
 
 
 def test_status_code_response():
