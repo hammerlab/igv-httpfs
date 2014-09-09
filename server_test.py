@@ -5,6 +5,7 @@ import mock
 import requests
 from types import StringType
 import urlparse
+import sys
 
 from nose.tools import *
 
@@ -188,3 +189,18 @@ def test_wsgi_missing_file_head():
     start_response.assert_called_once_with('404 Not Found', [
         ('Content-Type', 'text/plain'),
         ('Content-Length', str(len(expected_response)))])
+
+@mock.patch('requests.get')
+def test_head_only_requests_summary(mock_request):
+    '''Pulling an entire 300GB BAM file for a HEAD request would be bad.'''
+    httpfs_url = ('http://localhost:14000/webhdfs/v1/b.txt?'
+        'user.name=igv&op=getcontentsummary')
+    mock_request.return_value = stubbed_get(httpfs_url)
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'HEAD',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+
+    mock_request.assert_called_once_with(httpfs_url)

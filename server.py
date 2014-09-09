@@ -102,6 +102,18 @@ def handle_normal_request(path, params={}):
     return status, make_response_headers(response_body), response_body
 
 
+def handle_head_request(path):
+    status, response_headers, response_body = handle_normal_request(
+            path, {'op': 'getcontentsummary'})
+    if status != '200 OK':
+        return status, response_headers, response_body
+
+    length = json.loads(response_body)['ContentSummary']['length']
+    response_headers = [('Content-Type', 'text/plain'),
+            ('Content-Length', str(length))]
+    return status, response_headers, ''
+
+
 def handle_range_request(environ):
     path = environ['PATH_INFO']
     byte_range_header = environ.get('HTTP_RANGE')
@@ -148,17 +160,14 @@ def application(environ, start_response):
         status, response_headers, response_body = handle_range_request(environ)
     else:
         path = environ['PATH_INFO']
-        status, response_headers, response_body = handle_normal_request(path)
+        if request_method == 'GET':
+            status, response_headers, response_body = handle_normal_request(path)
+        elif request_method == 'HEAD':
+            status, response_headers, response_body = handle_head_request(path)
 
     start_response(status, response_headers)
 
-    if request_method == 'GET':
-        return [response_body]
-    elif request_method == 'HEAD':
-        if status == '200 OK':
-            return ['']
-        else:
-            return [response_body]
+    return [response_body]
 
 
 def run():
