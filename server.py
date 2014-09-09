@@ -155,7 +155,10 @@ def application(environ, start_response):
     if request_method == 'GET':
         return [response_body]
     elif request_method == 'HEAD':
-        return ['']
+        if status == '200 OK':
+            return ['']
+        else:
+            return [response_body]
 
 
 def run():

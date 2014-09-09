@@ -154,3 +154,35 @@ def test_wsgi_range_bytes():
         ('Content-Length', str(len(expected_response))),
         ('Accept-Ranges', 'bytes'),
         ('Content-Range', 'bytes 5-8/13')])
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_wsgi_head_request():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'HEAD',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+    
+    expected_response = 'This is b.txt'
+    eq_([''], response)  # no response for a HEAD request
+    start_response.assert_called_once_with('200 OK', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_wsgi_missing_file_head():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'HEAD',
+        'PATH_INFO': '/c.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+    
+    expected_response = 'File /c.txt does not exist.'
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('404 Not Found', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
