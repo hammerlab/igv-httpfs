@@ -23,9 +23,9 @@ FLAGS = gflags.FLAGS
 import requests
 
 
-gflags.DEFINE_integer(
-        'httpfs_port', 14000,
-        'Port on which HttpFS is running.')
+gflags.DEFINE_string(
+        'httpfs_endpoint', 'http://localhost:14000',
+        'Root URL for the HttpFS server.')
 
 gflags.DEFINE_string(
         'hdfs_user', 'igv',
@@ -41,8 +41,8 @@ gflags.DEFINE_string(
 def make_httpfs_url(path, user_params={}):
     params = {'user.name': FLAGS.hdfs_user, 'op': 'OPEN'}
     params.update(user_params)
-    return 'http://demeter.hpc.mssm.edu:%s/webhdfs/v1%s%s?%s' % (
-            FLAGS.httpfs_port, FLAGS.hdfs_prefix, path,
+    return '%s/webhdfs/v1%s%s?%s' % (
+            FLAGS.httpfs_endpoint, FLAGS.hdfs_prefix, path,
             urllib.urlencode(params))
 
 
