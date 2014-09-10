@@ -96,7 +96,7 @@ def handle_remote_failure(response):
 def handle_normal_request(path, params={}):
     should_patch = False
     if should_fix(path):
-        path = path.replace('.fixed', '')
+        path = path.replace('.fixed', '') + '/part-r-00000'
         should_patch = True
 
     url = make_httpfs_url(path, params)
