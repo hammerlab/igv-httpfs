@@ -2,4 +2,3 @@ requests==2.3.0
 python-gflags
 nose
 mock
-PyVCF
