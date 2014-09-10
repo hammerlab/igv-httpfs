@@ -1,0 +1,50 @@
+##fileformat=VCFv4.1
+##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=FT,Number=1,Type=String,Description="Genotype-level filter">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=MIN_DP,Number=1,Type=Integer,Description="Minimum DP observed within the GVCF block">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification">
+##FORMAT=<ID=PQ,Number=1,Type=Float,Description="Read-backed phasing quality">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##FORMAT=<ID=SB,Number=4,Type=Integer,Description="Per-sample component statistics which comprise the Fisher's Exact Test to detect strand bias.">
+##INFO=<ID=ClippingRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref number of hard clipped bases">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
+##INFO=<ID=DS,Number=0,Type=Flag,Description="Were any of the samples downsampled?">
+##INFO=<ID=HaplotypeScore,Number=1,Type=Float,Description="Consistency of the site with at most two segregating haplotypes">
+##INFO=<ID=InbreedingCoeff,Number=1,Type=Float,Description="Inbreeding coefficient as estimated from the genotype likelihoods per-sample when compared against the Hardy-Weinberg expectation">
+##INFO=<ID=MQ,Number=1,Type=Float,Description="RMS Mapping Quality">
+##INFO=<ID=MQ0,Number=1,Type=Integer,Description="Total Mapping Quality Zero Reads">
+##INFO=<ID=MQRankSum,Number=1,Type=Float,Description="Z-score From Wilcoxon rank sum test of Alt vs. Ref read mapping qualities">
+##INFO=<ID=NEGATIVE_TRAIN_SITE,Number=0,Type=Flag,Description="This variant was used to build the negative training set of bad variants">
+##INFO=<ID=POSITIVE_TRAIN_SITE,Number=0,Type=Flag,Description="This variant was used to build the positive training set of good variants">
+##INFO=<ID=QD,Number=1,Type=Float,Description="Variant Confidence/Quality by Depth">
+##INFO=<ID=ReadPosRankSum,Number=1,Type=Float,Description="Z-score from Wilcoxon rank sum test of Alt vs. Ref read position bias">
+##INFO=<ID=SB,Number=1,Type=Float,Description="Strand Bias">
+##INFO=<ID=VQSLOD,Number=1,Type=Float,Description="Log odds ratio of being a true variant versus being false under the trained gaussian mixture model">
+##INFO=<ID=culprit,Number=1,Type=String,Description="The annotation which was the worst performing in the Gaussian mixture model, likely the reason why the variant was filtered out">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	somatic
+20	333688	.	T	A	.	.	.	GT:DP:GQ	1/0
+20	393640	.	T	A	.	.	.	GT:DP:GQ	1/0
+20	331922	.	T	C	.	.	.	GT:DP:GQ	1/0
+20	914421	.	C	G	.	.	.	GT:DP:GQ	1/0
+20	755755	.	G	A	.	.	.	GT:DP:GQ	1/0
+20	478271	.	A	G	.	.	.	GT:DP:GQ	1/0
+20	946163	.	T	G	.	.	.	GT:DP:GQ	1/0
+20	349778	.	A	T	.	.	.	GT:DP:GQ	1/0
+20	567332	.	A	G	.	.	.	GT:DP:GQ	1/0
+20	839053	.	G	A	.	.	.	GT:DP:GQ	1/0
+20	878064	.	A	G	.	.	.	GT:DP:GQ	1/0
+20	676298	.	C	T	.	.	.	GT:DP:GQ	1/0
+20	272757	.	C	G	.	.	.	GT:DP:GQ	1/0
+20	405819	.	T	G	.	.	.	GT:DP:GQ	1/0
+20	120355	.	T	G	.	.	.	GT:DP:GQ	1/0
+20	193314	.	A	T	.	.	.	GT:DP:GQ	1/0
+20	341572	.	T	A	.	.	.	GT:DP:GQ	1/0
+20	989421	.	A	G	.	.	.	GT:DP:GQ	1/0
+20	727342	.	T	C	.	.	.	GT:DP:GQ	1/0
+20	972521	.	A	T	.	.	.	GT:DP:GQ	1/0
+20	916769	.	A	T	.	.	.	GT:DP:GQ	1/0
+20	767439	.	G	A	.	.	.	GT:DP:GQ	1/0
+20	918481	.	T	A	.	.	.	GT:DP:GQ	1/0
