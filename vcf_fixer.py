@@ -4,6 +4,10 @@
 See https://github.com/bigdatagenomics/adam/issues/353 for details.
 
 The fix is to add "FORMAT" and "somatic" columns.
+
+The FORMAT column indicates that the remaining columns define samples. It's
+already present in the data but missing in the header. "somatic" is just the
+name of a sample, it could be anything.
 '''
 
 def fix(vcf_contents):
