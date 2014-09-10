@@ -24,6 +24,8 @@ import sys
 import urllib
 import wsgiref.simple_server
 
+import vcf_fixer
+
 
 # These are defaults which can be overridden by environment variables.
 CONFIG = {
@@ -59,6 +61,11 @@ def make_response_headers(response_body):
             ('Content-Length', str(len(response_body)))]
 
 
+def should_fix(path):
+    '''Whether to apply VCF monkey patching.'''
+    return '.fixed.' in path
+
+
 BYTE_RANGE_RE = re.compile(r'bytes=(\d+)-(\d+)')
 def parse_byte_range(byte_range):
     '''Returns the two numbers in 'bytes=123-456' or throws ValueError.'''
@@ -87,6 +94,11 @@ def handle_remote_failure(response):
 
 
 def handle_normal_request(path, params={}):
+    should_patch = False
+    if should_fix(path):
+        path = path.replace('.fixed', '') + '/part-r-00000'
+        should_patch = True
+
     url = make_httpfs_url(path, params)
     response = requests.get(url)
 
@@ -95,6 +107,8 @@ def handle_normal_request(path, params={}):
 
     status = status_code_response(200)
     response_body = response.content
+    if should_patch:
+        response_body = vcf_fixer.fix(response_body)
     return status, make_response_headers(response_body), response_body
 
 
@@ -156,13 +170,15 @@ def application(environ, start_response):
         status, response_headers, response_body = handle_range_request(environ)
     else:
         path = environ['PATH_INFO']
-        if request_method == 'GET':
+        if request_method == 'GET' or should_fix(path):
             status, response_headers, response_body = handle_normal_request(path)
         elif request_method == 'HEAD':
             status, response_headers, response_body = handle_head_request(path)
 
     start_response(status, response_headers)
 
+    if request_method == 'HEAD' and status == '200 OK':
+        response_body = ''
     return [response_body]
 
 
