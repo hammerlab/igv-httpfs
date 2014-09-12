@@ -155,15 +155,34 @@ def handle_range_request(environ):
     return status, response_headers, response_body
 
 
+def handle_options_request(environ):
+    '''Assume this is in response to a CORS preflight request.'''
+    return status_code_response(200), [
+        ('Access-Control-Allow-Methods', 'HEAD, GET, OPTIONS'),
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', '0')], ''
+
+
+def add_cors_headers(environ, headers):
+    '''Add headers which allow arbitrary cross-origin requests.'''
+    if 'HTTP_ORIGIN' not in environ:
+        return  # not a CORS request
+    headers.extend([('Access-Control-Allow-Origin', '*'),
+                    ('Access-Control-Allow-Headers', 'Range')])
+
+
 def application(environ, start_response):
     '''Required WSGI interface.'''
     request_method = environ['REQUEST_METHOD']
 
-    if request_method not in ['GET', 'HEAD']:
+    if request_method not in ['GET', 'HEAD', 'OPTIONS']:
         response_body = 'Method %s not allowed.' % request_method
         start_response(status_code_response(405),
                        make_response_headers(response_body))
         return [response_body]
+
+    if request_method == 'OPTIONS':
+        status, response_headers, response_body = handle_options_request(environ)
 
     byte_range_header = environ.get('HTTP_RANGE')
     if byte_range_header:
@@ -175,6 +194,7 @@ def application(environ, start_response):
         elif request_method == 'HEAD':
             status, response_headers, response_body = handle_head_request(path)
 
+    add_cors_headers(environ, response_headers)
     start_response(status, response_headers)
 
     if request_method == 'HEAD' and status == '200 OK':
