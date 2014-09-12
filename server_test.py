@@ -113,7 +113,7 @@ def test_wsgi_application():
         'PATH_INFO': '/b.txt',
         'QUERY_STRING': '',
         }, start_response)
-    
+
     expected_response = 'This is b.txt'
     eq_([expected_response], response)
     start_response.assert_called_once_with('200 OK', [
@@ -129,7 +129,7 @@ def test_wsgi_missing_file():
         'PATH_INFO': '/c.txt',
         'QUERY_STRING': '',
         }, start_response)
-    
+
     expected_response = 'File /c.txt does not exist.'
     eq_([expected_response], response)
     assert type(response[0]) is StringType  # wsgi requires this.
@@ -147,7 +147,7 @@ def test_wsgi_range_bytes():
         'QUERY_STRING': '',
         'HTTP_RANGE': 'bytes=5-8'
         }, start_response)
-    
+
     expected_response = 'is b'
     eq_([expected_response], response)
     start_response.assert_called_once_with('206 Partial Content', [
@@ -165,7 +165,7 @@ def test_wsgi_head_request():
         'PATH_INFO': '/b.txt',
         'QUERY_STRING': '',
         }, start_response)
-    
+
     expected_response = 'This is b.txt'
     eq_([''], response)  # no response for a HEAD request
     start_response.assert_called_once_with('200 OK', [
@@ -181,7 +181,7 @@ def test_wsgi_missing_file_head():
         'PATH_INFO': '/c.txt',
         'QUERY_STRING': '',
         }, start_response)
-    
+
     expected_response = 'File /c.txt does not exist.'
     eq_([expected_response], response)
     start_response.assert_called_once_with('404 Not Found', [
@@ -202,3 +202,45 @@ def test_head_only_requests_summary(mock_request):
         }, start_response)
 
     mock_request.assert_called_once_with(httpfs_url)
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_simple_cors_request():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'GET',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': 'salt=1234',
+        'HTTP_ORIGIN': 'example.com'
+        }, start_response)
+
+    expected_response = 'This is b.txt'
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('200 OK', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response))),
+        ('Access-Control-Allow-Origin', '*'),
+        ('Access-Control-Allow-Headers', 'Range')])
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_cors_preflight_request():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'OPTIONS',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': 'salt=1234',
+        'HTTP_ORIGIN': 'example.com',
+        'HTTP_ACCESS_CONTROL_REQUEST_HEADERS': 'range',
+        'HTTP_ACCESS_CONTROL_REQUEST_METHOD': 'GET'
+        }, start_response)
+
+    expected_response = ''
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('200 OK', [
+        ('Access-Control-Allow-Methods', 'HEAD, GET, OPTIONS'),
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', '0'),
+        ('Access-Control-Allow-Origin', '*'),
+        ('Access-Control-Allow-Headers', 'Range'),
+        ])
