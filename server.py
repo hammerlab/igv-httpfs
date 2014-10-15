@@ -159,6 +159,7 @@ def handle_options_request(environ):
     '''Assume this is in response to a CORS preflight request.'''
     return status_code_response(200), [
         ('Access-Control-Allow-Methods', 'HEAD, GET, OPTIONS'),
+        ('Access-Control-Max-Age', '1728000'),  # 20 days
         ('Content-Type', 'text/plain'),
         ('Content-Length', '0')], ''
 

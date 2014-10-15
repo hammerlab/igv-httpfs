@@ -239,6 +239,7 @@ def test_cors_preflight_request():
     eq_([expected_response], response)
     start_response.assert_called_once_with('200 OK', [
         ('Access-Control-Allow-Methods', 'HEAD, GET, OPTIONS'),
+        ('Access-Control-Max-Age', '1728000'),
         ('Content-Type', 'text/plain'),
         ('Content-Length', '0'),
         ('Access-Control-Allow-Origin', '*'),
