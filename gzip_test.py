@@ -11,7 +11,7 @@ STD_REQUEST = {
     'REQUEST_METHOD': 'GET',
     'PATH_INFO': '/b.txt',
     'QUERY_STRING': '',
-    'ACCEPT_ENCODING': 'gzip'
+    'HTTP_ACCEPT_ENCODING': 'gzip'
 }
 
 def update(obj, k, v):

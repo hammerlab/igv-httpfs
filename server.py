@@ -172,7 +172,7 @@ def update_headers(headers, name, value):
 def apply_compression(environ, status, headers, body):
     '''Compress body and update headers if appropriate. Returns new body.'''
     method = environ['REQUEST_METHOD']
-    accept_encoding = environ.get('ACCEPT_ENCODING', '')
+    accept_encoding = environ.get('HTTP_ACCEPT_ENCODING', '')
     if (method != 'GET' or status not in ['200 OK', '206 Partial Content'] or
             'gzip' not in accept_encoding):
         return body
