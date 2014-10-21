@@ -3,11 +3,12 @@ import server
 import json
 import mock
 import requests
+from testutils import stubbed_get
 from types import StringType
-import urlparse
 import sys
 
 from nose.tools import *
+
 
 def test_make_httpfs_url():
     eq_('http://localhost:14000/webhdfs/v1/datasets/foo.bam?user.name=igv&op=OPEN',
@@ -39,63 +40,6 @@ def test_invalid_byte_range():
 @raises(ValueError)
 def test_invalid_byte_range2():
     server.parse_byte_range('bytes=9876-1024')
-
-
-FAKE_FS = {
-        'a/b/c.txt': 'This is a/b/c.txt',
-        'b.txt': 'This is b.txt'
-}
-
-def stubbed_get(url):
-    prefix = 'http://localhost:14000/webhdfs/v1/'
-    if not url.startswith(prefix):
-        raise requests.ConnectionError()
-
-    parsed_url = urlparse.urlparse(url)
-    assert parsed_url.path.startswith('/webhdfs/v1/')
-    path = parsed_url.path[len('/webhdfs/v1/'):]
-
-    q = dict(urlparse.parse_qsl(parsed_url.query))
-    assert 'op' in q
-    assert 'user.name' in q
-
-    r = requests.Response()
-    if path in FAKE_FS:
-        r._content = FAKE_FS[path]
-        r.status_code = 200
-    else:
-        r.status_code = 404
-        r._content = json.dumps({
-            'RemoteException': {
-                'message': 'File /%s does not exist.' % path,
-                'exception': 'FileNotFoundException'
-            }
-        })
-
-    if q['op'].lower() == 'open':
-        if q.get('offset'):
-            r._content = r._content[int(q.get('offset')):]
-        if q.get('length'):
-            r._content = r._content[:int(q.get('length'))]
-    elif q['op'].lower() == 'getcontentsummary':
-        if r.status_code == 200:
-            r._content = json.dumps({'ContentSummary':{'length':len(r._content)}})
-    else:
-        raise ValueError('Invalid op %s' % q['op'])
-    return r
-
-
-def test_stubbed_get():
-    url = 'http://localhost:14000/webhdfs/v1/b.txt?op=OPEN&user.name=igv'
-    eq_(200, stubbed_get(url).status_code)
-    eq_('This is b.txt', stubbed_get(url).content)
-
-    eq_(404, stubbed_get(url.replace('b.txt', 'c.txt')).status_code)
-    eq_(404, stubbed_get(url.replace('b.txt', 'c.txt')).status_code)
-
-    partial_url = url + '&offset=5&length=4'
-    eq_(200, stubbed_get(partial_url).status_code)
-    eq_('is b', stubbed_get(partial_url).content)
 
 
 @mock.patch('requests.get', stubbed_get)
@@ -245,3 +189,13 @@ def test_cors_preflight_request():
         ('Access-Control-Allow-Origin', '*'),
         ('Access-Control-Allow-Headers', 'Range'),
         ])
+
+
+def test_update_headers():
+    def update_headers(headers, k, v):
+        server.update_headers(headers, k, v)
+        return headers
+
+    eq_([('k', 'v')], update_headers([], 'k', 'v'))
+    eq_([('k', 'v2')], update_headers([('k', 'v')], 'k', 'v2'))
+    eq_([('a', 'b'), ('k', 'v')], update_headers([('a', 'b')], 'k', 'v'))

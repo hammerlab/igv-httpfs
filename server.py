@@ -10,9 +10,9 @@ Usage:
     server.py [port]
     
 Respects the following environment variables:
-    HTTPFS_ENDPOINT ='http://localhost:14000'
-    HDFS_USER       ='igv'
-    HDFS_PREFIX     =''
+    HTTPFS_ENDPOINT = 'http://localhost:14000'
+    HDFS_USER       = 'igv'
+    HDFS_PREFIX     = ''
 '''
 
 import httplib
@@ -23,11 +23,12 @@ import requests
 import sys
 import urllib
 import wsgiref.simple_server
-
+import zlib
 
 
 # These are defaults which can be overridden by environment variables.
 CONFIG = {
+    'GZIP_LEVEL': 6,
     'HTTPFS_ENDPOINT': 'http://localhost:14000',
     'HDFS_USER': 'igv',
     'HDFS_PREFIX': ''
@@ -58,11 +59,6 @@ def status_code_response(status_code):
 def make_response_headers(response_body):
     return [('Content-Type', 'text/plain'),
             ('Content-Length', str(len(response_body)))]
-
-
-def should_fix(path):
-    '''Whether to apply VCF monkey patching.'''
-    return '.fixed.' in path
 
 
 BYTE_RANGE_RE = re.compile(r'bytes=(\d+)-(\d+)')
@@ -164,6 +160,32 @@ def add_cors_headers(environ, headers):
                     ('Access-Control-Allow-Headers', 'Range')])
 
 
+def update_headers(headers, name, value):
+    for i, (n, v) in enumerate(headers):
+        if n == name:
+            headers[i] = (name, value)
+            return
+
+    headers.append((name, value))
+
+
+def apply_compression(environ, status, headers, body):
+    '''Compress body and update headers if appropriate. Returns new body.'''
+    method = environ['REQUEST_METHOD']
+    accept_encoding = environ.get('ACCEPT_ENCODING', '')
+    if (method != 'GET' or status not in ['200 OK', '206 Partial Content'] or
+            'gzip' not in accept_encoding):
+        return body
+
+    compressed_data = zlib.compress(body, CONFIG['GZIP_LEVEL'])
+    if len(compressed_data) >= len(body):
+        return body
+
+    update_headers(headers, 'Content-Encoding', 'gzip')
+    update_headers(headers, 'Content-Length', str(len(compressed_data)))
+    return compressed_data
+
+
 def application(environ, start_response):
     '''Required WSGI interface.'''
     request_method = environ['REQUEST_METHOD']
@@ -182,12 +204,14 @@ def application(environ, start_response):
         status, response_headers, response_body = handle_range_request(environ)
     else:
         path = environ['PATH_INFO']
-        if request_method == 'GET' or should_fix(path):
+        if request_method == 'GET':
             status, response_headers, response_body = handle_normal_request(path)
         elif request_method == 'HEAD':
             status, response_headers, response_body = handle_head_request(path)
 
     add_cors_headers(environ, response_headers)
+    response_body = (
+        apply_compression(environ, status, response_headers, response_body))
     start_response(status, response_headers)
 
     if request_method == 'HEAD' and status == '200 OK':
