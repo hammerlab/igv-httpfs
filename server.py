@@ -24,7 +24,6 @@ import sys
 import urllib
 import wsgiref.simple_server
 
-import vcf_fixer
 
 
 # These are defaults which can be overridden by environment variables.
@@ -94,11 +93,6 @@ def handle_remote_failure(response):
 
 
 def handle_normal_request(path, params={}):
-    should_patch = False
-    if should_fix(path):
-        path = path.replace('.fixed', '') + '/part-r-00000'
-        should_patch = True
-
     url = make_httpfs_url(path, params)
     response = requests.get(url)
 
@@ -107,8 +101,6 @@ def handle_normal_request(path, params={}):
 
     status = status_code_response(200)
     response_body = response.content
-    if should_patch:
-        response_body = vcf_fixer.fix(response_body)
     return status, make_response_headers(response_body), response_body
 
 
