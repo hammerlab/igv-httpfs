@@ -171,6 +171,19 @@ def update_headers(headers, name, value):
     headers.append((name, value))
 
 
+# Shim for Python 2.6
+if sys.version_info[:2] == (2, 6):
+    class GzipFile(GzipFile):
+        """ Backport of context manager support for python 2.6"""
+        def __enter__(self):
+            if self.fileobj is None:
+                raise ValueError("I/O operation on closed GzipFile object")
+            return self
+
+        def __exit__(self, *args):
+            self.close()
+
+
 def compress(data):
     '''Returns a gzipped version of the data.'''
     gzip_buffer = IO()
