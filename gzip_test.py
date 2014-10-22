@@ -4,7 +4,6 @@ import mock
 from nose.tools import *
 from testutils import stubbed_get
 import requests
-import zlib
 
 
 STD_REQUEST = {
@@ -22,13 +21,13 @@ def update(obj, k, v):
 
 
 @mock.patch('requests.get', stubbed_get)
-@mock.patch('zlib.compress')
+@mock.patch('server.compress')
 def test_simple_gzip(mock_compress):
     mock_compress.return_value = 'shrunk!'
     start_response = mock.MagicMock()
     response = server.application(STD_REQUEST, start_response)
 
-    mock_compress.assert_called_once_with('This is b.txt', 6)
+    mock_compress.assert_called_once_with('This is b.txt')
     expected_response = 'shrunk!'
     eq_([expected_response], response)
     start_response.assert_called_once_with('200 OK', [
@@ -38,7 +37,7 @@ def test_simple_gzip(mock_compress):
 
 
 @mock.patch('requests.get', stubbed_get)
-@mock.patch('zlib.compress')
+@mock.patch('server.compress')
 def test_compression_backfires(mock_compress):
     mock_compress.return_value = 'something really long!'
     start_response = mock.MagicMock()
@@ -52,7 +51,7 @@ def test_compression_backfires(mock_compress):
 
 
 @mock.patch('requests.get', stubbed_get)
-@mock.patch('zlib.compress')
+@mock.patch('server.compress')
 def test_head_does_not_compress(mock_compress):
     mock_compress.return_value = 'shrunk!'
     start_response = mock.MagicMock()
@@ -69,7 +68,7 @@ def test_head_does_not_compress(mock_compress):
 
 
 @mock.patch('requests.get', stubbed_get)
-@mock.patch('zlib.compress')
+@mock.patch('server.compress')
 def test_gzipped_range_request(mock_compress):
     # this should compress just the range that was requested.
     mock_compress.return_value = 's!'
@@ -78,7 +77,7 @@ def test_gzipped_range_request(mock_compress):
         update(STD_REQUEST, 'HTTP_RANGE', 'bytes=5-8'),
         start_response)
 
-    mock_compress.assert_called_once_with('is b', 6)
+    mock_compress.assert_called_once_with('is b')
     expected_response = 's!'
     eq_([expected_response], response)
     start_response.assert_called_once_with('206 Partial Content', [

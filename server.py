@@ -23,7 +23,9 @@ import requests
 import sys
 import urllib
 import wsgiref.simple_server
-import zlib
+
+from gzip import GzipFile
+from io import BytesIO as IO
 
 
 # These are defaults which can be overridden by environment variables.
@@ -169,6 +171,17 @@ def update_headers(headers, name, value):
     headers.append((name, value))
 
 
+def compress(data):
+    '''Returns a gzipped version of the data.'''
+    gzip_buffer = IO()
+    with GzipFile(mode='wb',
+                  compresslevel=CONFIG['GZIP_LEVEL'],
+                  fileobj=gzip_buffer) as gzip_file:
+        gzip_file.write(data)
+
+    return gzip_buffer.getvalue()
+
+
 def apply_compression(environ, status, headers, body):
     '''Compress body and update headers if appropriate. Returns new body.'''
     method = environ['REQUEST_METHOD']
@@ -177,7 +190,7 @@ def apply_compression(environ, status, headers, body):
             'gzip' not in accept_encoding):
         return body
 
-    compressed_data = zlib.compress(body, CONFIG['GZIP_LEVEL'])
+    compressed_data = compress(body)
     if len(compressed_data) >= len(body):
         return body
 
