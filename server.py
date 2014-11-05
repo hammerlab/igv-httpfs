@@ -24,13 +24,9 @@ import sys
 import urllib
 import wsgiref.simple_server
 
-from gzip import GzipFile
-from io import BytesIO as IO
-
 
 # These are defaults which can be overridden by environment variables.
 CONFIG = {
-    'GZIP_LEVEL': 6,
     'HTTPFS_ENDPOINT': 'http://localhost:14000',
     'HDFS_USER': 'igv',
     'HDFS_PREFIX': ''
@@ -171,47 +167,6 @@ def update_headers(headers, name, value):
     headers.append((name, value))
 
 
-# Shim for Python 2.6
-if sys.version_info[:2] == (2, 6):
-    class GzipFile(GzipFile):
-        """ Backport of context manager support for python 2.6"""
-        def __enter__(self):
-            if self.fileobj is None:
-                raise ValueError("I/O operation on closed GzipFile object")
-            return self
-
-        def __exit__(self, *args):
-            self.close()
-
-
-def compress(data):
-    '''Returns a gzipped version of the data.'''
-    gzip_buffer = IO()
-    with GzipFile(mode='wb',
-                  compresslevel=CONFIG['GZIP_LEVEL'],
-                  fileobj=gzip_buffer) as gzip_file:
-        gzip_file.write(data)
-
-    return gzip_buffer.getvalue()
-
-
-def apply_compression(environ, status, headers, body):
-    '''Compress body and update headers if appropriate. Returns new body.'''
-    method = environ['REQUEST_METHOD']
-    accept_encoding = environ.get('HTTP_ACCEPT_ENCODING', '')
-    if (method != 'GET' or status not in ['200 OK', '206 Partial Content'] or
-            'gzip' not in accept_encoding):
-        return body
-
-    compressed_data = compress(body)
-    if len(compressed_data) >= len(body):
-        return body
-
-    update_headers(headers, 'Content-Encoding', 'gzip')
-    update_headers(headers, 'Content-Length', str(len(compressed_data)))
-    return compressed_data
-
-
 def application(environ, start_response):
     '''Required WSGI interface.'''
     request_method = environ['REQUEST_METHOD']
@@ -236,8 +191,6 @@ def application(environ, start_response):
             status, response_headers, response_body = handle_head_request(path)
 
     add_cors_headers(environ, response_headers)
-    response_body = (
-        apply_compression(environ, status, response_headers, response_body))
     start_response(status, response_headers)
 
     if request_method == 'HEAD' and status == '200 OK':
