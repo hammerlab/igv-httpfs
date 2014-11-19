@@ -121,6 +121,7 @@ def handle_range_request(environ):
     status, response_headers, response_body = handle_normal_request(
             path, httpfs_params)
     if status != '200 OK':
+        sys.stderr.write('%r\n' % response_body)
         return status, response_headers, response_body
 
     # Getting the full length of the file requires a second request.

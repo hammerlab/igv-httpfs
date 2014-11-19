@@ -149,6 +149,24 @@ def test_wsgi_missing_file_head():
         ('Content-Type', 'text/plain'),
         ('Content-Length', str(len(expected_response)))])
 
+
+@mock.patch('requests.get', stubbed_get)
+def test_wsgi_missing_file_range():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'GET',
+        'PATH_INFO': '/c.txt',
+        'QUERY_STRING': '',
+        'HTTP_RANGE': 'bytes=5-8'
+        }, start_response)
+
+    expected_response = 'File /c.txt does not exist.'
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('404 Not Found', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
+
+
 @mock.patch('requests.get')
 def test_head_only_requests_summary(mock_request):
     '''Pulling an entire 300GB BAM file for a HEAD request would be bad.'''
