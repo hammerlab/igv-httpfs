@@ -45,8 +45,8 @@ def make_httpfs_url(path, user_params={}):
 def check_connection():
     url = make_httpfs_url('/', {'op': 'liststatus'})
     response = requests.get(url)
-    assert 'FileStatuses' in response, (
-        'Unable to connect to HttpFS, request for %s returned %r' % (url, response))
+    assert 'FileStatuses' in response.json(), (
+        'Unable to connect to HttpFS, request for %s returned %r' % (url, response.json()))
 
 
 def status_code_response(status_code):
@@ -205,7 +205,7 @@ def run(args=sys.argv):
     else:
         port = int(args[1])
 
-    #check_connection()
+    check_connection()
     httpd = wsgiref.simple_server.make_server('0.0.0.0', port, application)
     sys.stderr.write('Listening on 0.0.0.0:%d\n' % port)
     httpd.serve_forever()
