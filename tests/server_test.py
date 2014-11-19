@@ -117,6 +117,23 @@ def test_wsgi_head_request():
         ('Content-Length', str(len(expected_response)))])
 
 
+@mock.patch('requests.get')
+def test_invalid_method(mock_get):
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'PUT',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+
+    expected_response = 'Method PUT not allowed.'
+    eq_([expected_response], response)  # no response for a HEAD request
+    start_response.assert_called_once_with('405 Method Not Allowed', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
+    assert not mock_get.called
+
+
 @mock.patch('requests.get', stubbed_get)
 def test_wsgi_missing_file_head():
     start_response = mock.MagicMock()
