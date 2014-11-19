@@ -3,7 +3,7 @@ import server
 import json
 import mock
 import requests
-from testutils import stubbed_get
+from testutils import stubbed_get, fake_response
 from types import StringType
 import sys
 
@@ -236,16 +236,23 @@ def test_update_headers():
     eq_([('a', 'b'), ('k', 'v')], update_headers([('a', 'b')], 'k', 'v'))
 
 
+@mock.patch('requests.get')
 @mock.patch('wsgiref.simple_server.make_server')
-def test_default_port(mock_make_server):
+def test_run(mock_make_server, mock_get):
     mock_server = mock.MagicMock()
     mock_make_server.return_value = mock_server
+    mock_get.return_value = fake_response(200, '{"FileStatuses": {"FileStatus": []}}')
     server.run(['server.py'])
     mock_make_server.assert_called_once_with('0.0.0.0', 9876, mock.ANY)
     mock_server.serve_forever.assert_called_once_with()
+    mock_get.assert_called_once_with(
+            'http://localhost:14000/webhdfs/v1/?user.name=igv&op=liststatus')
 
     mock_make_server.reset_mock()
     mock_server.reset_mock()
+    mock_get.reset_mock()
     server.run(['server.py', '1234'])
     mock_make_server.assert_called_once_with('0.0.0.0', 1234, mock.ANY)
     mock_server.serve_forever.assert_called_once_with()
+    mock_get.assert_called_once_with(
+            'http://localhost:14000/webhdfs/v1/?user.name=igv&op=liststatus')

@@ -8,6 +8,14 @@ FAKE_FS = {
         'b.txt': 'This is b.txt'
 }
 
+def fake_response(status_code, content):
+    '''Returns a fake requests.Response object'''
+    r = requests.Response()
+    r.status_code = status_code
+    r._content = content
+    return r
+
+
 def stubbed_get(url):
     '''Stub for requests.get which imitates HTTPFS.'''
     prefix = 'http://localhost:14000/webhdfs/v1/'
@@ -22,19 +30,15 @@ def stubbed_get(url):
     assert 'op' in q
     assert 'user.name' in q
 
-    r = requests.Response()
     if path in FAKE_FS:
-        r._content = FAKE_FS[path]
-        r.status_code = 200
+        r = fake_response(200, FAKE_FS[path])
     else:
-        r.status_code = 404
-        r._content = json.dumps({
+        return fake_response(404, json.dumps({
             'RemoteException': {
                 'message': 'File /%s does not exist.' % path,
                 'exception': 'FileNotFoundException'
             }
-        })
-        return r
+        }))
 
     if q['op'].lower() == 'open':
         if q.get('offset'):
