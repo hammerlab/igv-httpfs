@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/hammerlab/igv-httpfs.svg)](https://travis-ci.org/hammerlab/igv-httpfs)
+
 igv-httpfs
 ==========
 
