@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hammerlab/igv-httpfs.svg)](https://travis-ci.org/hammerlab/igv-httpfs) [![Coverage Status](https://img.shields.io/coveralls/hammerlab/igv-httpfs.svg)](https://coveralls.io/r/hammerlab/igv-httpfs)
+[![Build Status](https://travis-ci.org/hammerlab/igv-httpfs.svg)](https://travis-ci.org/hammerlab/igv-httpfs) [![Coverage Status](https://img.shields.io/coveralls/hammerlab/igv-httpfs.svg)](https://coveralls.io/r/hammerlab/igv-httpfs?branch=coverage)
 
 igv-httpfs
 ==========
