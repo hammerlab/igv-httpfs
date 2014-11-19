@@ -117,6 +117,23 @@ def test_wsgi_head_request():
         ('Content-Length', str(len(expected_response)))])
 
 
+@mock.patch('requests.get')
+def test_invalid_method(mock_get):
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'PUT',
+        'PATH_INFO': '/b.txt',
+        'QUERY_STRING': '',
+        }, start_response)
+
+    expected_response = 'Method PUT not allowed.'
+    eq_([expected_response], response)  # no response for a HEAD request
+    start_response.assert_called_once_with('405 Method Not Allowed', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
+    assert not mock_get.called
+
+
 @mock.patch('requests.get', stubbed_get)
 def test_wsgi_missing_file_head():
     start_response = mock.MagicMock()
@@ -131,6 +148,24 @@ def test_wsgi_missing_file_head():
     start_response.assert_called_once_with('404 Not Found', [
         ('Content-Type', 'text/plain'),
         ('Content-Length', str(len(expected_response)))])
+
+
+@mock.patch('requests.get', stubbed_get)
+def test_wsgi_missing_file_range():
+    start_response = mock.MagicMock()
+    response = server.application({
+        'REQUEST_METHOD': 'GET',
+        'PATH_INFO': '/c.txt',
+        'QUERY_STRING': '',
+        'HTTP_RANGE': 'bytes=5-8'
+        }, start_response)
+
+    expected_response = 'File /c.txt does not exist.'
+    eq_([expected_response], response)
+    start_response.assert_called_once_with('404 Not Found', [
+        ('Content-Type', 'text/plain'),
+        ('Content-Length', str(len(expected_response)))])
+
 
 @mock.patch('requests.get')
 def test_head_only_requests_summary(mock_request):
@@ -199,3 +234,18 @@ def test_update_headers():
     eq_([('k', 'v')], update_headers([], 'k', 'v'))
     eq_([('k', 'v2')], update_headers([('k', 'v')], 'k', 'v2'))
     eq_([('a', 'b'), ('k', 'v')], update_headers([('a', 'b')], 'k', 'v'))
+
+
+@mock.patch('wsgiref.simple_server.make_server')
+def test_default_port(mock_make_server):
+    mock_server = mock.MagicMock()
+    mock_make_server.return_value = mock_server
+    server.run(['server.py'])
+    mock_make_server.assert_called_once_with('0.0.0.0', 9876, mock.ANY)
+    mock_server.serve_forever.assert_called_once_with()
+
+    mock_make_server.reset_mock()
+    mock_server.reset_mock()
+    server.run(['server.py', '1234'])
+    mock_make_server.assert_called_once_with('0.0.0.0', 1234, mock.ANY)
+    mock_server.serve_forever.assert_called_once_with()

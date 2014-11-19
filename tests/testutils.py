@@ -34,6 +34,7 @@ def stubbed_get(url):
                 'exception': 'FileNotFoundException'
             }
         })
+        return r
 
     if q['op'].lower() == 'open':
         if q.get('offset'):
@@ -46,4 +47,3 @@ def stubbed_get(url):
     else:
         raise ValueError('Invalid op %s' % q['op'])
     return r
-
