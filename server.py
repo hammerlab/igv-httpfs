@@ -198,11 +198,11 @@ def application(environ, start_response):
     return [response_body]
 
 
-def run():
-    if len(sys.argv) < 2:
+def run(args=sys.argv):
+    if len(args) < 2:
         port = 9876
     else:
-        port = int(sys.argv[1])
+        port = int(args[1])
 
     #check_connection()
     httpd = wsgiref.simple_server.make_server('0.0.0.0', port, application)

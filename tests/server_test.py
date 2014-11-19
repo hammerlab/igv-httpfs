@@ -216,3 +216,18 @@ def test_update_headers():
     eq_([('k', 'v')], update_headers([], 'k', 'v'))
     eq_([('k', 'v2')], update_headers([('k', 'v')], 'k', 'v2'))
     eq_([('a', 'b'), ('k', 'v')], update_headers([('a', 'b')], 'k', 'v'))
+
+
+@mock.patch('wsgiref.simple_server.make_server')
+def test_default_port(mock_make_server):
+    mock_server = mock.MagicMock()
+    mock_make_server.return_value = mock_server
+    server.run(['server.py'])
+    mock_make_server.assert_called_once_with('0.0.0.0', 9876, mock.ANY)
+    mock_server.serve_forever.assert_called_once_with()
+
+    mock_make_server.reset_mock()
+    mock_server.reset_mock()
+    server.run(['server.py', '1234'])
+    mock_make_server.assert_called_once_with('0.0.0.0', 1234, mock.ANY)
+    mock_server.serve_forever.assert_called_once_with()
