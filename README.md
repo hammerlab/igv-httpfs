@@ -3,7 +3,7 @@
 igv-httpfs
 ==========
 
-An adaptor which lets IGV talk to HDFS via HttpFS
+An adaptor which lets IGV talk to HDFS via HttpFS. Blog post [here](http://www.hammerlab.org/2014/12/05/igv-httpfs/).
 
 To run the server:
 
