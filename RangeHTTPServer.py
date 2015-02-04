@@ -19,10 +19,13 @@ import server
 
 
 def copy_byte_range(infile, outfile, start, stop=None, bufsize=16*1024):
-    '''Like shutil.copyfileobj, but only copy a range of the streams.'''
+    '''Like shutil.copyfileobj, but only copy a range of the streams.
+
+    Both start and stop are inclusive.
+    '''
     infile.seek(start)
     while 1:
-        to_read = min(bufsize, stop - infile.tell() if stop else bufsize)
+        to_read = min(bufsize, stop + 1 - infile.tell() if stop else bufsize)
         buf = infile.read(to_read)
         if not buf:
             break
@@ -57,7 +60,7 @@ class RangeRequestHandler(SimpleHTTPRequestHandler):
         fs = os.fstat(f.fileno())
         self.send_header('Accept-Ranges', 'bytes')
         self.send_header('Content-Range', 'bytes %s-%s/%s' % (first, last, fs[6]))
-        self.send_header('Content-Length', str(last - first))
+        self.send_header('Content-Length', str(last - first + 1))
         self.send_header('Last-Modified', self.date_time_string(fs.st_mtime))
         self.end_headers()
         return f

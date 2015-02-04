@@ -8,12 +8,16 @@ def test_copy_byte_range():
     outbuffer = StringIO()
 
     RangeHTTPServer.copy_byte_range(inbuffer, outbuffer, 4, 10)
-    eq_('456789', outbuffer.getvalue())
+    eq_('456789a', outbuffer.getvalue())
 
     outbuffer = StringIO()
     RangeHTTPServer.copy_byte_range(inbuffer, outbuffer, 0, 4)
-    eq_('0123', outbuffer.getvalue())
+    eq_('01234', outbuffer.getvalue())
 
     outbuffer = StringIO()
     RangeHTTPServer.copy_byte_range(inbuffer, outbuffer, 26)
     eq_('qrstuvwxyz', outbuffer.getvalue())
+
+    outbuffer = StringIO()
+    RangeHTTPServer.copy_byte_range(inbuffer, outbuffer, 0, 9, 10)
+    eq_('0123456789', outbuffer.getvalue())
